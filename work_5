@@ -1,0 +1,169 @@
+import uuid
+import networkx as nx
+import matplotlib.pyplot as plt
+from collections import deque # Імпортуємо чергу
+
+# --- ЧАСТИНА 1: Базовий код для візуалізації дерева (з попередніх завдань) ---
+
+class Node:
+    def __init__(self, key, color="skyblue"):
+        self.left = None
+        self.right = None
+        self.val = key
+        self.color = color 
+        self.id = str(uuid.uuid4())
+
+def add_edges(graph, node, pos, x=0, y=0, layer=1):
+    if node is not None:
+        graph.add_node(node.id, color=node.color, label=node.val)
+        if node.left:
+            graph.add_edge(node.id, node.left.id)
+            l = x - 1 / 2 ** layer
+            pos[node.left.id] = (l, y - 1)
+            l = add_edges(graph, node.left, pos, x=l, y=y - 1, layer=layer + 1)
+        if node.right:
+            graph.add_edge(node.id, node.right.id)
+            r = x + 1 / 2 ** layer
+            pos[node.right.id] = (r, y - 1)
+            r = add_edges(graph, node.right, pos, x=r, y=y - 1, layer=layer + 1)
+    return graph
+
+def draw_tree(tree_root, title="Tree Visualization"):
+    tree = nx.DiGraph()
+    pos = {tree_root.id: (0, 0)}
+    tree = add_edges(tree, tree_root, pos)
+
+    colors = [node[1]['color'] for node in tree.nodes(data=True)]
+    labels = {node[0]: node[1]['label'] for node in tree.nodes(data=True)}
+
+    plt.figure(figsize=(8, 5))
+    plt.title(title)
+    nx.draw(tree, pos=pos, labels=labels, arrows=False, node_size=2500, node_color=colors)
+    plt.show()
+
+# --- ЧАСТИНА 2: Генерація кольорів ---
+
+def generate_color(index, total_steps):
+    """
+    Генерує колір від темно-синього до світлого.
+    index: номер кроку (0, 1, 2...)
+    total_steps: загальна кількість вузлів
+    """
+    # Базовий колір (темно-синій): RGB(18, 150, 240) -> #1296F0
+    # Кінцевий колір (дуже світлий): RGB(200, 240, 255)
+    
+    r_start, g_start, b_start = 18, 150, 240
+    r_end, g_end, b_end = 220, 240, 255
+    
+    # Розраховуємо крок зміни кольору
+    if total_steps > 1:
+        step = index / (total_steps - 1)
+    else:
+        step = 0
+
+    # Лінійна інтерполяція (змішуємо кольори)
+    r = int(r_start + (r_end - r_start) * step)
+    g = int(g_start + (g_end - g_start) * step)
+    b = int(b_start + (b_end - b_start) * step)
+    
+    # Повертаємо у форматі HEX (#RRGGBB)
+    return f'#{r:02x}{g:02x}{b:02x}'
+
+def count_nodes(node):
+    """Допоміжна функція: рахує кількість вузлів у дереві"""
+    if node is None:
+        return 0
+    return 1 + count_nodes(node.left) + count_nodes(node.right)
+
+# --- ЧАСТИНА 3: Алгоритми обходу (DFS та BFS) ---
+
+def dfs_visualize(root):
+    """
+    Обхід в глибину (Depth-First Search).
+    Використовує СТЕК (Stack).
+    """
+    # Підраховуємо вузли, щоб знати, скільки кольорів генерувати
+    total_nodes = count_nodes(root)
+    
+    # Стек зберігає пари (вузол)
+    stack = [root]
+    visited_order = []
+    
+    while stack:
+        # LIFO: беремо останній доданий елемент
+        node = stack.pop()
+        
+        if node not in visited_order:
+            visited_order.append(node)
+            
+            # Додаємо дітей у стек.
+            # Спочатку правий, потім лівий, щоб лівий оброблявся першим (бо він буде зверху стека)
+            if node.right:
+                stack.append(node.right)
+            if node.left:
+                stack.append(node.left)
+    
+    # Фарбуємо вузли відповідно до порядку відвідування
+    for i, node in enumerate(visited_order):
+        node.color = generate_color(i, total_nodes)
+    
+    draw_tree(root, "DFS: Обхід в глибину (Темний -> Світлий)")
+
+def bfs_visualize(root):
+    """
+    Обхід в ширину (Breadth-First Search).
+    Використовує ЧЕРГУ (Queue).
+    """
+    total_nodes = count_nodes(root)
+    
+    # Черга для BFS
+    queue = deque([root])
+    visited_order = []
+    
+    while queue:
+        # FIFO: беремо перший елемент з початку черги
+        node = queue.popleft()
+        
+        if node not in visited_order:
+            visited_order.append(node)
+            
+            # Додаємо дітей у чергу
+            if node.left:
+                queue.append(node.left)
+            if node.right:
+                queue.append(node.right)
+
+    # Фарбуємо вузли
+    for i, node in enumerate(visited_order):
+        node.color = generate_color(i, total_nodes)
+        
+    draw_tree(root, "BFS: Обхід в ширину (Темний -> Світлий)")
+
+# --- ЧАСТИНА 4: Запуск ---
+
+# Створення дерева вручну (як в прикладі)
+#       0
+#      / \
+#     4   1
+#    / \ / \
+#   5 10 3  (і додамо ще один для наочності) -> 2
+
+root = Node(0)
+root.left = Node(4)
+root.right = Node(1)
+root.left.left = Node(5)
+root.left.right = Node(10)
+root.right.left = Node(3)
+root.right.right = Node(2)
+
+print("Запускаю візуалізацію DFS...")
+# Спочатку запускаємо DFS. 
+# УВАГА: кольори зміняться, відкриється вікно. Закрий його, щоб продовжити.
+dfs_visualize(root)
+
+# Скидаємо кольори перед наступним запуском (на всяк випадок, хоча bfs все одно перефарбує)
+# Але нам треба 'очистити' дерево або створити нове, якщо хочемо ідеальної чистоти. 
+# Проте наша функція bfs повністю перефарбовує всі знайдені вузли, тому все ок.
+
+print("Запускаю візуалізацію BFS...")
+bfs_visualize(root)
