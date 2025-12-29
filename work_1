@@ -1,0 +1,143 @@
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None  # Посилання на наступний елемент
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    # Функція для додавання даних у кінець списку (щоб ми могли створити список)
+    def append(self, data):
+        new_node = Node(data)
+        if self.head is None:
+            self.head = new_node
+            return
+        last_node = self.head
+        while last_node.next:
+            last_node = last_node.next
+        last_node.next = new_node
+
+    # Функція для виводу списку на екран
+    def print_list(self):
+        current_node = self.head
+        while current_node:
+            print(current_node.data, end=" -> ")
+            current_node = current_node.next
+        print("None")
+
+    # --- ЗАВДАННЯ 1: Реверсування списку ---
+    def reverse(self):
+        prev = None
+        current = self.head
+        while current is not None:
+            next_node = current.next  # Запам'ятовуємо наступний вузол
+            current.next = prev       # Міняємо стрілку назад
+            prev = current            # Зсуваємо "попередній" на поточний
+            current = next_node       # Переходимо до наступного кроку
+        self.head = prev  # Оновлюємо голову списку
+
+    # --- ЗАВДАННЯ 2: Сортування вставками ---
+    def insertion_sort(self):
+        sorted_head = None  # Це буде голова нового відсортованого списку
+        current = self.head # Починаємо з поточного списку
+
+        while current is not None:
+            next_node = current.next  # Запам'ятовуємо наступний, щоб не загубити
+
+            # Логіка вставки current у відсортований список (sorted_head)
+            if sorted_head is None or sorted_head.data >= current.data:
+                # Вставляємо на початок, якщо список пустий або елемент менший за голову
+                current.next = sorted_head
+                sorted_head = current
+            else:
+                # Шукаємо місце всередині списку
+                temp = sorted_head
+                # Шукаємо вузол, після якого треба вставити
+                while temp.next is not None and temp.next.data < current.data:
+                    temp = temp.next
+                
+                # Вставляємо
+                current.next = temp.next
+                temp.next = current
+
+            current = next_node # Йдемо далі по старому списку
+        
+        self.head = sorted_head
+
+# --- ЗАВДАННЯ 3: Об'єднання двох відсортованих списків ---
+def merge_lists(list1, list2):
+    merged_list = LinkedList()
+    # Створюємо фіктивний вузол, щоб легко почати список
+    dummy = Node(0)
+    tail = dummy
+
+    head1 = list1.head
+    head2 = list2.head
+
+    while head1 is not None and head2 is not None:
+        if head1.data <= head2.data:
+            tail.next = head1
+            head1 = head1.next
+        else:
+            tail.next = head2
+            head2 = head2.next
+        tail = tail.next
+
+    # Якщо один зі списків ще не закінчився, додаємо залишок
+    if head1 is not None:
+        tail.next = head1
+    elif head2 is not None:
+        tail.next = head2
+
+    # Пропускаємо фіктивний вузол і повертаємо результат
+    merged_list.head = dummy.next
+    return merged_list
+
+# --- Перевірка роботи коду ---
+
+print("=== 1. Перевірка реверсування ===")
+ll = LinkedList()
+ll.append(10)
+ll.append(20)
+ll.append(30)
+print("Початковий список:")
+ll.print_list()
+
+ll.reverse()
+print("Реверсований список:")
+ll.print_list()
+
+print("\n=== 2. Перевірка сортування ===")
+ll_sort = LinkedList()
+ll_sort.append(4)
+ll_sort.append(2)
+ll_sort.append(1)
+ll_sort.append(3)
+print("Несортований список:")
+ll_sort.print_list()
+
+ll_sort.insertion_sort()
+print("Відсортований список:")
+ll_sort.print_list()
+
+print("\n=== 3. Перевірка об'єднання списків ===")
+# Створюємо два вже відсортовані списки
+l1 = LinkedList()
+l1.append(1)
+l1.append(3)
+l1.append(5)
+
+l2 = LinkedList()
+l2.append(2)
+l2.append(4)
+l2.append(6)
+
+print("Список 1:")
+l1.print_list()
+print("Список 2:")
+l2.print_list()
+
+merged_ll = merge_lists(l1, l2)
+print("Об'єднаний список:")
+merged_ll.print_list()
