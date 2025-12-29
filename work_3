@@ -1,0 +1,88 @@
+import heapq  # Імпортуємо модуль для роботи з пріоритетною чергою (купою)
+
+class Graph:
+    def __init__(self):
+        # Створюємо порожній словник для зберігання графа
+        self.edges = {}
+
+    def add_edge(self, u, v, weight):
+        """
+        Додає ребро між вершинами u та v з вагою weight.
+        Граф неорієнтований, тому додаємо зв'язок в обидва боки.
+        """
+        if u not in self.edges:
+            self.edges[u] = []
+        if v not in self.edges:
+            self.edges[v] = []
+            
+        self.edges[u].append((v, weight))
+        self.edges[v].append((u, weight))
+
+def dijkstra(graph, start_node):
+    """
+    Реалізація алгоритму Дейкстри з використанням бінарної купи.
+    """
+    # 1. Ініціалізація відстаней.
+    # Спочатку всі відстані нескінченні, крім початкової.
+    distances = {node: float('infinity') for node in graph.edges}
+    distances[start_node] = 0
+
+    # 2. Створюємо пріоритетну чергу (бінарну купу).
+    # Зберігаємо пари: (відстань, вершина).
+    priority_queue = [(0, start_node)]
+
+    print(f"Починаємо пошук від вершини {start_node}...")
+
+    while priority_queue:
+        # 3. Вибираємо вершину з найменшою відстанню (вершина піраміди)
+        current_distance, current_node = heapq.heappop(priority_queue)
+
+        # Якщо ми знайшли коротший шлях до цієї вершини раніше, пропускаємо
+        if current_distance > distances[current_node]:
+            continue
+
+        # 4. Перевіряємо всіх сусідів поточної вершини
+        for neighbor, weight in graph.edges[current_node]:
+            distance = current_distance + weight
+
+            # 5. Якщо знайшли коротший шлях до сусіда — запам'ятовуємо його
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                # Додаємо сусіда в чергу, щоб потім перевірити його сусідів
+                heapq.heappush(priority_queue, (distance, neighbor))
+                
+                # (Для наочності виведемо оновлення)
+                print(f" -> Оновлено шлях до {neighbor}: тепер {distance} (через {current_node})")
+
+    return distances
+
+# --- Головна частина програми ---
+
+# Створюємо граф
+g = Graph()
+
+# Додаємо вершини та ребра (як на схемі в конспекті, наприклад)
+# А - B (вага 5), A - C (вага 10) і т.д.
+g.add_edge('A', 'B', 5)
+g.add_edge('A', 'C', 10)
+g.add_edge('B', 'D', 3)
+g.add_edge('C', 'D', 2)
+g.add_edge('C', 'E', 4)
+g.add_edge('D', 'E', 8)
+g.add_edge('D', 'F', 6)
+g.add_edge('E', 'F', 1)
+
+print("Граф створено. Вершини та зв'язки:")
+for node, neighbors in g.edges.items():
+    print(f"{node}: {neighbors}")
+
+print("-" * 30)
+
+# Запускаємо алгоритм від вершини 'A'
+start_vertex = 'A'
+shortest_paths = dijkstra(g, start_vertex)
+
+print("-" * 30)
+print(f"Найкоротші шляхи від вершини {start_vertex} до всіх інших:")
+for node, distance in shortest_paths.items():
+    print(f"До вершини {node}: {distance}")
