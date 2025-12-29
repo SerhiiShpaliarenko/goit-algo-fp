@@ -1,0 +1,86 @@
+import uuid
+import networkx as nx
+import matplotlib.pyplot as plt
+import heapq
+
+# --- ЧАСТИНА 1: Код, наданий в умові (Базовий візуалізатор) ---
+
+class Node:
+    def __init__(self, key, color="skyblue"):
+        self.left = None
+        self.right = None
+        self.val = key
+        self.color = color 
+        self.id = str(uuid.uuid4())
+
+def add_edges(graph, node, pos, x=0, y=0, layer=1):
+    if node is not None:
+        graph.add_node(node.id, color=node.color, label=node.val)
+        if node.left:
+            graph.add_edge(node.id, node.left.id)
+            l = x - 1 / 2 ** layer
+            pos[node.left.id] = (l, y - 1)
+            l = add_edges(graph, node.left, pos, x=l, y=y - 1, layer=layer + 1)
+        if node.right:
+            graph.add_edge(node.id, node.right.id)
+            r = x + 1 / 2 ** layer
+            pos[node.right.id] = (r, y - 1)
+            r = add_edges(graph, node.right, pos, x=r, y=y - 1, layer=layer + 1)
+    return graph
+
+def draw_tree(tree_root):
+    tree = nx.DiGraph()
+    pos = {tree_root.id: (0, 0)}
+    tree = add_edges(tree, tree_root, pos)
+
+    colors = [node[1]['color'] for node in tree.nodes(data=True)]
+    labels = {node[0]: node[1]['label'] for node in tree.nodes(data=True)}
+
+    plt.figure(figsize=(8, 5))
+    nx.draw(tree, pos=pos, labels=labels, arrows=False, node_size=2500, node_color=colors)
+    plt.show()
+
+# --- ЧАСТИНА 2: Твоє рішення (Конвертація купи в дерево) ---
+
+def heap_to_tree(heap_list, index=0):
+    """
+    Рекурсивна функція, яка перетворює масив (купу) у дерево вузлів Node.
+    heap_list: список елементів купи
+    index: поточний індекс у списку
+    """
+    
+    # Якщо індекс виходить за межі списку, значить вузла не існує
+    if index >= len(heap_list):
+        return None
+
+    # Створюємо вузол з поточного елемента купи
+    new_node = Node(heap_list[index])
+
+    # Рекурсивно створюємо лівого нащадка
+    # У бінарній купі лівий нащадок елемента i має індекс 2*i + 1
+    left_index = 2 * index + 1
+    new_node.left = heap_to_tree(heap_list, left_index)
+
+    # Рекурсивно створюємо правого нащадка
+    # У бінарній купі правий нащадок елемента i має індекс 2*i + 2
+    right_index = 2 * index + 2
+    new_node.right = heap_to_tree(heap_list, right_index)
+
+    return new_node
+
+# --- ЧАСТИНА 3: Перевірка роботи ---
+
+# 1. Створюємо довільний список чисел
+data = [10, 4, 5, 1, 3, 2, 8]
+
+# 2. Перетворюємо його на купу (heap) за допомогою heapq
+# Це важливо, щоб числа стали у правильному порядку (батько менше дітей)
+heapq.heapify(data)
+print("Сформована купа (список):", data)
+
+# 3. Перетворюємо список-купу в дерево вузлів (для візуалізації)
+heap_root = heap_to_tree(data)
+
+# 4. Малюємо
+print("Відображаю дерево...")
+draw_tree(heap_root)
