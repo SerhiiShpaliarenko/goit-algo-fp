@@ -1,0 +1,84 @@
+import random
+import matplotlib.pyplot as plt
+
+def simulate_dice_rolls(num_trials):
+    """
+    Симулює кидання двох кубиків num_trials разів.
+    Повертає словник, де ключ - це сума, а значення - кількість випадінь.
+    """
+    # Словник для підрахунку сум (від 2 до 12). Спочатку скрізь нулі.
+    counts = {sum_val: 0 for sum_val in range(2, 13)}
+
+    # Запускаємо симуляцію
+    for _ in range(num_trials):
+        die1 = random.randint(1, 6) # Випадкове число від 1 до 6
+        die2 = random.randint(1, 6)
+        total_sum = die1 + die2
+        
+        counts[total_sum] += 1 # Збільшуємо лічильник для цієї суми
+
+    return counts
+
+def print_probabilities(counts, num_trials):
+    """
+    Виводить таблицю ймовірностей та порівнює з теоретичними.
+    """
+    # Теоретичні ймовірності (взяті з умови завдання для порівняння)
+    theoretical_probs = {
+        2: 2.78, 3: 5.56, 4: 8.33, 5: 11.11, 6: 13.89, 
+        7: 16.67, 8: 13.89, 9: 11.11, 10: 8.33, 11: 5.56, 12: 2.78
+    }
+
+    print(f"{'Сума':<10} | {'Монте-Карло (%)':<20} | {'Теоретична (%)':<20} | {'Різниця (%)':<20}")
+    print("-" * 75)
+
+    monte_carlo_probs = {}
+
+    for s in range(2, 13):
+        count = counts[s]
+        probability_percent = (count / num_trials) * 100
+        monte_carlo_probs[s] = probability_percent
+        
+        theoretical = theoretical_probs[s]
+        diff = abs(probability_percent - theoretical)
+
+        print(f"{s:<10} | {probability_percent:<20.2f} | {theoretical:<20.2f} | {diff:<20.2f}")
+
+    return monte_carlo_probs
+
+def plot_probabilities(mc_probs):
+    """
+    Малює стовпчастий графік (гістограму) ймовірностей.
+    """
+    sums = list(mc_probs.keys())
+    probs = list(mc_probs.values())
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(sums, probs, color='skyblue', edgecolor='black', label='Монте-Карло')
+    
+    # Додамо лінію теоретичного розподілу для краси
+    theoretical_values = [2.78, 5.56, 8.33, 11.11, 13.89, 16.67, 13.89, 11.11, 8.33, 5.56, 2.78]
+    plt.plot(sums, theoretical_values, color='red', marker='o', linestyle='dashed', linewidth=2, label='Теорія')
+
+    plt.xlabel('Сума на кубиках')
+    plt.ylabel('Ймовірність (%)')
+    plt.title('Ймовірність суми двох кубиків (Монте-Карло vs Теорія)')
+    plt.xticks(sums)
+    plt.legend()
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.show()
+
+# --- Головна частина програми ---
+
+num_simulations = 1000000  # Один мільйон кидків
+print(f"Запускаємо симуляцію {num_simulations} кидків...")
+
+# 1. Симулюємо
+results = simulate_dice_rolls(num_simulations)
+
+# 2. Рахуємо та виводимо таблицю
+probabilities = print_probabilities(results, num_simulations)
+
+# 3. Будуємо графік
+print("Будую графік...")
+plot_probabilities(probabilities)
