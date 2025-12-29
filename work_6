@@ -1,0 +1,103 @@
+# Вхідні дані
+items = {
+    "pizza": {"cost": 50, "calories": 300},
+    "hamburger": {"cost": 40, "calories": 250},
+    "hot-dog": {"cost": 30, "calories": 200},
+    "pepsi": {"cost": 10, "calories": 100},
+    "cola": {"cost": 15, "calories": 220},
+    "potato": {"cost": 25, "calories": 350}
+}
+
+def greedy_algorithm(items, budget):
+    """
+    Жадібний алгоритм: вибирає страви з найбільшим співвідношенням калорій до вартості.
+    """
+    # 1. Обчислюємо співвідношення (калорії / ціна) для кожної страви
+    # Створюємо список кортежів: (назва, ціна, калорії, коефіцієнт)
+    item_list = []
+    for name, data in items.items():
+        ratio = data['calories'] / data['cost']
+        item_list.append((name, data['cost'], data['calories'], ratio))
+
+    # 2. Сортуємо список за коефіцієнтом у порядку спадання (від найвигіднішого)
+    # key=lambda x: x[3] означає, що сортуємо за 4-м елементом кортежу (ratio)
+    item_list.sort(key=lambda x: x[3], reverse=True)
+
+    total_calories = 0
+    chosen_items = []
+    current_budget = budget
+
+    # 3. Проходимо по списку і беремо все, що влазить у бюджет
+    for name, cost, calories, ratio in item_list:
+        if cost <= current_budget:
+            chosen_items.append(name)
+            total_calories += calories
+            current_budget -= cost
+
+    return chosen_items, total_calories
+
+def dynamic_programming(items, budget):
+    """
+    Динамічне програмування: знаходить гарантовано найкращий набір страв.
+    Використовує таблицю dp[i][w], де i - кількість розглянутих страв, w - поточний бюджет.
+    """
+    # Перетворюємо словник у список для зручної індексації
+    item_list = [(name, data['cost'], data['calories']) for name, data in items.items()]
+    n = len(item_list)
+
+    # 1. Створюємо таблицю K (розміром n+1 рядків та budget+1 стовпців)
+    # K[i][w] буде зберігати макс. калорії для перших i страв при бюджеті w
+    K = [[0 for x in range(budget + 1)] for x in range(n + 1)]
+
+    # 2. Заповнюємо таблицю
+    for i in range(1, n + 1):
+        name, cost, calories = item_list[i - 1]
+        for w in range(budget + 1):
+            if cost <= w:
+                # Якщо страва вміщається в бюджет 'w', вибираємо максимум з двох варіантів:
+                # 1. Не брати цю страву (значення як у попереднього рядка K[i-1][w])
+                # 2. Взяти цю страву (калорії поточної + кращий результат для залишку грошей)
+                K[i][w] = max(K[i - 1][w], calories + K[i - 1][w - cost])
+            else:
+                # Якщо страва занадто дорога для поточного ліміту 'w', не беремо її
+                K[i][w] = K[i - 1][w]
+
+    # 3. Відновлюємо набір страв (йдемо з правого нижнього кута таблиці назад)
+    selected_items = []
+    w = budget
+    for i in range(n, 0, -1):
+        # Якщо значення відрізняється від значення в рядку вище, значить ми взяли цю страву
+        if K[i][w] != K[i - 1][w]:
+            name, cost, calories = item_list[i - 1]
+            selected_items.append(name)
+            w -= cost  # Віднімаємо вартість взятої страви
+
+    # Повертаємо список і максимальну калорійність (значення в нижньому правому куті)
+    return selected_items, K[n][budget]
+
+# --- Перевірка роботи ---
+
+budget_limit = 60 # Можна змінити, щоб перевірити різні сценарії
+
+print(f"Бюджет: {budget_limit}")
+print("-" * 30)
+
+# Запуск жадібного алгоритму
+greedy_items, greedy_cals = greedy_algorithm(items, budget_limit)
+print("Жадібний алгоритм:")
+print(f"Вибрані страви: {greedy_items}")
+print(f"Сумарна калорійність: {greedy_cals}")
+
+print("-" * 30)
+
+# Запуск динамічного програмування
+dp_items, dp_cals = dynamic_programming(items, budget_limit)
+print("Динамічне програмування:")
+print(f"Вибрані страви: {dp_items}")
+print(f"Сумарна калорійність: {dp_cals}")
+
+# Аналіз (для себе)
+if greedy_cals == dp_cals:
+    print("\nВисновок: Жадібний алгоритм спрацював ідеально!")
+else:
+    print(f"\nВисновок: Жадібний алгоритм помилився на {dp_cals - greedy_cals} калорій.")
